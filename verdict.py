@@ -108,8 +108,9 @@ ids = tokenizer.encode(text)
 print(ids)
 print(tokenizer.decode(ids))
 
-
-
+import tiktoken
+print(tiktoken.__version__)
+import importlib
 
 
 
