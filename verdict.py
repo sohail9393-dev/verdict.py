@@ -108,6 +108,9 @@ ids = tokenizer.encode(text)
 print(ids)
 print(tokenizer.decode(ids))
 
+
+# LECTURE NO. 8 STARTS FROM HERE.
+
 import importlib.metadata
 import tiktoken
 print("tiktoken version:", importlib.metadata.version("tiktoken"))
