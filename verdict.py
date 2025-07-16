@@ -65,6 +65,7 @@ text = """"It's the last he painted, you know,"
 ids = tokenizer.encode(text)
 print(ids)
 print(tokenizer.decode(ids))
+
 all_tokens = sorted(list(set(preprocessed)))
 all_tokens.extend(["<|endoftext|>", "<|unk|>"])
 
@@ -134,3 +135,155 @@ print(integers)
 
 strings = tokenizer.decode(integers)
 print(strings)
+
+# LECTURE NUMBER 9 STARTS FROM HERE
+
+with open("the-verdict.txt", "r", encoding="utf-8") as f:
+    raw_text = f.read()
+
+enc_text = tokenizer.encode(raw_text)
+print(len(enc_text))
+
+# This code removes the first 50 tokens it is done to make lecture more interesting
+# No need to do it
+enc_sample = enc_text[50:]
+
+context_size = 4
+
+x = enc_sample[:context_size]
+y = enc_sample[1:context_size+1]
+
+print(f"x: {x}")
+print(f"y:      {y}")
+# Here we are printing our encoded token numbers
+for i in range(1, context_size+1):
+    context = enc_sample[:i]
+    desired = enc_sample[i]
+
+    print(context, "---->", desired)
+
+#  Here we are printing our decoded text
+for i in range(1, context_size+1):
+    context = enc_sample[:i]
+    desired = enc_sample[i]
+
+    print(tokenizer.decode(context), "---->", tokenizer.decode([desired]))
+
+from torch.utils.data import Dataset, DataLoader
+
+
+class GPTDatasetV1(Dataset):
+    def __init__(self, txt, tokenizer, max_length, stride):
+        self.input_ids = []
+        self.target_ids = []
+
+        # Tokenize the entire text
+        token_ids = tokenizer.encode(txt, allowed_special={"<|endoftext|>"})
+
+        # Use a sliding window to chunk the book into overlapping sequences of max_length
+        for i in range(0, len(token_ids) - max_length, stride):
+            input_chunk = token_ids[i:i + max_length]
+            target_chunk = token_ids[i + 1: i + max_length + 1]
+            self.input_ids.append(torch.tensor(input_chunk))
+            self.target_ids.append(torch.tensor(target_chunk))
+
+    def __len__(self):
+        return len(self.input_ids)
+
+    def __getitem__(self, idx):
+        return self.input_ids[idx], self.target_ids[idx]
+
+def create_dataloader_v1(txt, batch_size=4, max_length=256, 
+                         stride=128, shuffle=True, drop_last=True,
+                         num_workers=0):
+
+    # Initialize the tokenizer
+    tokenizer = tiktoken.get_encoding("gpt2")
+
+    # Create dataset
+    dataset = GPTDatasetV1(txt, tokenizer, max_length, stride)
+
+    # Create dataloader
+    dataloader = DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=shuffle,
+        drop_last=drop_last,
+        num_workers=num_workers
+    )
+
+    return dataloader
+
+
+with open("the-verdict.txt", "r", encoding="utf-8") as f:
+    raw_text = f.read()
+# It only gives us the input output pair
+
+
+import torch
+print("PyTorch version:", torch.__version__)
+dataloader = create_dataloader_v1(
+    raw_text, batch_size=1, max_length=4, stride=1, shuffle=False
+)
+
+data_iter = iter(dataloader)
+first_batch = next(data_iter)
+print(first_batch)
+
+second_batch = next(data_iter)
+print(second_batch)
+
+dataloader = create_dataloader_v1(raw_text, batch_size=8, max_length=4, stride=4, shuffle=False)
+
+data_iter = iter(dataloader)
+inputs, targets = next(data_iter)
+print("Inputs:\n", inputs)
+print("\nTargets:\n", targets)
+
+# LECTURE NUMBER 10 STARTS FROM HERE
+# IN THIS LEC. WE ARE GOING TO CREATE TOKEN EMBEDDINGS
+input_ids = torch.tensor([2, 3, 5, 1])
+
+vocab_size = 6
+output_dim = 3
+
+torch.manual_seed(123)
+embedding_layer = torch.nn.Embedding(vocab_size, output_dim)
+
+print(embedding_layer.weight)
+
+print(embedding_layer(torch.tensor([3])))
+
+
+print(embedding_layer(input_ids))
+
+# LECTURE NUMBER 11 STARTS FROM HERE
+# IN THIS LEC. WE ARE GOING TO CREATE POSITIONAL VECTOR EMBEDDINGS
+
+vocab_size = 50257
+output_dim = 256
+token_embedding_layer = torch.nn.Embedding(vocab_size, output_dim)
+
+max_length = 4
+dataloader = create_dataloader_v1(
+    raw_text, batch_size=8, max_length=max_length,
+    stride=max_length, shuffle=False 
+)
+data_iter = iter(dataloader)
+inputs, targets = next(data_iter)
+
+print("Token IDs:\n", inputs)
+print("\nInputs shape:\n", inputs.shape)
+
+token_embeddings = token_embedding_layer(inputs)
+print(token_embeddings.shape)
+
+context_length = max_length
+pos_embedding_layer = torch.nn.Embedding(context_length, output_dim)
+
+
+pos_embeddings = pos_embedding_layer(torch.arange(max_length))
+print(pos_embeddings.shape)
+
+input_embeddings = token_embeddings + pos_embeddings
+print(input_embeddings.shape)
