@@ -19,13 +19,14 @@ result = re.split(r'([,.:;?_!"()\']|--|\s)', text)
 result = [item.strip() for item in result if item.strip()]
 print(result)
 # Strip whitespace from each item and then filter out any empty strings.
+
 result = [item for item in result if item.strip()]
 print(result)
 text = "Hello, world. Is this-- a test?"
-
 result = re.split(r'([,.:;?_!"()\']|--|\s)', text)
 result = [item.strip() for item in result if item.strip()]
 print(result)
+
 preprocessed = re.split(r'([,.:;?_!"()\']|--|\s)', raw_text)
 preprocessed = [item.strip() for item in preprocessed if item.strip()]
 print(preprocessed[:30])
