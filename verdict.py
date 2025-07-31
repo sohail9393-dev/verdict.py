@@ -420,5 +420,4 @@ class SelfAttention_v1(nn.Module):
         return context_vec
     
 
-
         
